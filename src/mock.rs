@@ -73,3 +73,36 @@ impl NetworkConnector<MockStream> for MockConnector {
         Ok(MockStream::new())
     }
 }
+
+/// new connectors must be created if you wish to intercept requests.
+macro_rules! mock_connector (
+    ($name:ident {
+        $($url:expr => $res:expr)*
+    }) => (
+
+        struct $name;
+
+        impl ::net::NetworkConnector<::mock::MockStream> for $name {
+            fn connect<To: ::std::io::net::ip::ToSocketAddr>(&mut self, addr: To, scheme: &str) -> ::std::io::IoResult<::mock::MockStream> {
+                use std::collections::HashMap;
+                let addr = addr.to_socket_addr().unwrap();
+                debug!("MockStream::connect({}, {})", addr, scheme);
+                let mut map = HashMap::new();
+                $(map.insert($url, $res);)*
+
+
+                let key = format!("{}://{}", scheme, addr.ip);
+                // ignore port for now
+                match map.find(&&*key) {
+                    Some(res) => Ok(::mock::MockStream {
+                        write: ::std::io::MemWriter::new(),
+                        read: ::std::io::MemReader::new(res.to_string().into_bytes())
+                    }),
+                    None => panic!("{} doesn't know url {}", stringify!($name), key)
+                }
+            }
+
+        }
+
+    )
+)

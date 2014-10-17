@@ -11,7 +11,8 @@ use std::mem::{mod, transmute, transmute_copy};
 use std::raw::{mod, TraitObject};
 
 use uany::UncheckedBoxAnyDowncast;
-use openssl::ssl::{SslStream, SslContext};
+use openssl::ssl::{SslStream, SslContext, VerifyCallback};
+use openssl::ssl::SslVerifyMode::SslVerifyPeer;
 use openssl::ssl::SslMethod::Sslv23;
 use openssl::ssl::error::{SslError, StreamError, OpenSslErrors, SslSessionClosed};
 
@@ -228,7 +229,7 @@ impl NetworkStream for HttpStream {
 }
 
 /// A connector that will produce HttpStreams.
-pub struct HttpConnector;
+pub struct HttpConnector(pub Option<VerifyCallback>);
 
 impl NetworkConnector<HttpStream> for HttpConnector {
     fn connect<To: ToSocketAddr>(&mut self, addr: To, scheme: &str) -> IoResult<HttpStream> {
@@ -240,7 +241,8 @@ impl NetworkConnector<HttpStream> for HttpConnector {
             "https" => {
                 debug!("https scheme");
                 let stream = try!(TcpStream::connect(addr));
-                let context = try!(SslContext::new(Sslv23).map_err(lift_ssl_error));
+                let mut context = try!(SslContext::new(Sslv23).map_err(lift_ssl_error));
+                self.0.as_ref().map(|cb| context.set_verify(SslVerifyPeer, Some(*cb)));
                 let stream = try!(SslStream::new(&context, stream).map_err(lift_ssl_error));
                 Ok(Https(stream))
             },
