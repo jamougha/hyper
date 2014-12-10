@@ -32,6 +32,7 @@ macro_rules! bench_header(
         #[cfg(test)]
         mod $name {
             use test::Bencher;
+            #[glob = "benchmarks wut"]
             use super::*;
 
             use header::{Header, HeaderFormatter};
