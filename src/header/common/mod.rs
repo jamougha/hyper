@@ -132,4 +132,7 @@ pub mod upgrade;
 /// Exposes the UserAgent header.
 pub mod user_agent;
 
+/// Exposes the Referer header.
+pub mod referer;
+
 pub mod util;
