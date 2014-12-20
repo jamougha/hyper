@@ -131,6 +131,14 @@ fn test_remove_userinfo() {
                 format!("{}", RefererFormatter(&referer)));
 }
 
+#[test]
+fn test_url() {
+    let url = Url::parse("foo/bar");
+    match url {
+        Some(_) => println!("OK!"),
+        None => panic!()
+    }
+}
 
 #[test]
 fn test_parse_relative_uri() {
